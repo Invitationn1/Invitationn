@@ -754,6 +754,9 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
   var started = false;
   var entered = false;
   var INTRO_SPEED = 2.6;
+  var userInteracted = false;
+
+  function wasInteracted() { return userInteracted; }
 
   portalInit();
 
@@ -767,6 +770,7 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
   function openInvitation() {
     if (started) return;
     started = true;
+    userInteracted = true;
     initHero();
     poster.classList.add('closing');
     if (engine) {
@@ -797,6 +801,7 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
   }
 
   function playIntro(i) {
+    if (!userInteracted) { reveal(); return; }
     var v = intros[i];
     if (!v) { reveal(); return; }
     var next = intros[i + 1];
@@ -814,6 +819,7 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
   }
 
   function initHero() {
+    if (!userInteracted) return;
     hero.playbackRate = 1;
     var p = hero.play();
     if (p && p.catch) p.catch(function () {});
