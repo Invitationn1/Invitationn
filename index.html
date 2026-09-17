@@ -51,7 +51,7 @@ a{color:inherit;text-decoration:none}
   position:fixed;top:0;left:0;width:100%;height:100%;
   height:100dvh;
   z-index:80;
-  background:#1a1014;
+  background:radial-gradient(120% 90% at 50% 40%,#17101a 0%,#0d090b 60%,#060405 100%);
   overflow:hidden;
   transition:opacity .95s var(--ease);
   pointer-events:auto;
@@ -66,23 +66,35 @@ a{color:inherit;text-decoration:none}
   -webkit-user-select:none;user-select:none;
   -webkit-touch-callout:none;
   transition:opacity .55s var(--ease);
-  background:#1a1014;
+  background:radial-gradient(120% 90% at 50% 40%,#17101a 0%,#0d090b 60%,#060405 100%);
 }
 .poster.closing{opacity:0;pointer-events:none}
 .poster img{
-  position:absolute;top:0;left:0;width:100%;height:100%;
+  position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;
   object-position:center center;
 }
+.intro-bg{
+  position:absolute;top:-20px;left:-20px;width:calc(100% + 40px);height:calc(100% + 40px);z-index:1;
+  background:url('poster.jpg') center center / cover no-repeat;
+  filter:blur(22px) brightness(.65) saturate(1.05);
+  transform:scale(1.08);
+}
 .intro-video{
-  position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;
-  object-fit:cover;
+  position:absolute;inset:0;width:100%;height:100%;z-index:2;
+  object-fit:contain;
   object-position:center center;
+  background:transparent;
   opacity:0;
   pointer-events:none;
   transition:none;
 }
 .intro-video.active{opacity:1}
+.intro-shade{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% 40%, rgba(6,3,4,0) 55%, rgba(6,3,4,.38) 100%);
+}
 .poster:after{
   content:"";position:absolute;inset:0;pointer-events:none;
   background:
@@ -399,6 +411,8 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
   <video class="intro-video" id="introV2" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture controlslist="nodownload nofullscreen noremoteplayback">
     <source src="Wedding_car_driving_on_road_20260913154713.mp4" type="video/mp4">
   </video>
+  <div class="intro-bg"></div>
+  <div class="intro-shade"></div>
   <audio id="engineSnd" src="engine.mp3" preload="auto"></audio>
 </section>
 
@@ -764,11 +778,31 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
 
   portalInit();
 
+  var posterFaded = false;
+
+  function sizeFilm() {
+    var h = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : (window.innerHeight || document.documentElement.clientHeight);
+    film.style.height = Math.round(h) + 'px';
+  }
+
   function portalInit() {
     hero.muted = true;
-    intros.forEach(function (v) { if (v) v.muted = true; });
+    intros.forEach(function (v) { if (v) { v.muted = true; v.load(); } });
     if (engine) engine.volume = 0.85;
     poster.addEventListener('click', openInvitation, { once: true });
+    sizeFilm();
+    window.addEventListener('resize', sizeFilm);
+    window.addEventListener('orientationchange', sizeFilm);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', sizeFilm);
+      window.visualViewport.addEventListener('scroll', sizeFilm);
+    }
+  }
+
+  function fadePoster() {
+    if (posterFaded) return;
+    posterFaded = true;
+    poster.classList.add('closing');
   }
 
   function openInvitation() {
@@ -776,7 +810,6 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
     started = true;
     userInteracted = true;
     initHero();
-    poster.classList.add('closing');
     if (engine) {
       engine.currentTime = 0;
       engine.volume = 0.85;
@@ -785,6 +818,20 @@ footer .f-orn{width:150px;height:26px;margin:16px auto 8px;color:var(--gold-l)}
       setTimeout(fadeEngine, 3000);
     }
     playIntro(0);
+    var d0 = intros[0];
+    var fade = function () { fadePoster(); };
+    function fallback() {
+      if (d0 && d0.readyState >= 3) fadePoster();
+      else reveal();
+    }
+    if (d0) {
+      d0.addEventListener('loadeddata', fade, { once: true });
+      d0.addEventListener('canplay', fade, { once: true });
+      d0.addEventListener('playing', fade, { once: true });
+      d0.addEventListener('error', fallback, { once: true });
+      if (d0.readyState >= 2) fadePoster();
+    }
+    setTimeout(fallback, 8000);
     setTimeout(reveal, 30000);
   }
 
